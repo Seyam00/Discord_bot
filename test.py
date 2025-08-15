@@ -28,8 +28,8 @@ async def slap(ctx, *, reason: Slapper):
 async def on_ready():
     print(f"We have logged in as {bot.user}")
     sa_reset_warning_as.start()
-    sa_reset_warning_eu.start()
-    sa_reset_warning_na.start()
+    #sa_reset_warning_eu.start()
+    #sa_reset_warning_na.start()
 
 @bot.command()
 async def hello(ctx):
@@ -113,59 +113,27 @@ async def imaginarium_theatre(ctx, server: str):
         return
     await ctx.send(f"Time until next Imaginarium Theatre reset on {server} server: {time_left}")
 
-alert = {"AS" : False, "EU" : False, "NA" : False}
+alert_sa = {"AS" : False, "EU" : False, "NA" : False}
 
 
 @tasks.loop(minutes=5)
 async def sa_reset_warning_as():
-    global alert
-    server = "AS"
-    time_left = get_time_left_sa(server)
-
-    if time_left is None:
-        return
     
-    if time_left < timedelta(days=4) and not alert[server]:
-        channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
-        if channel:
-            await channel.send(f"Genshin Impact Spiral Abyss resets in 1 day!")
-        alert[server] = True
-    if time_left > timedelta(days=4):
-        alert[server] = False
+    for server in SERVER_OFFSET_HOURS:
+        time_left = get_time_left_sa(server)
 
-@tasks.loop(minutes=5)
-async def sa_reset_warning_eu():
-    global alert
-    server = "EU"
-    time_left = get_time_left_sa(server)
-
-    if time_left is None:
-        return
+        if time_left is None:
+            return
     
-    if time_left < timedelta(days=4) and not alert[server]:
-        channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
-        if channel:
-            await channel.send(f"Genshin Impact Spiral Abyss resets in 1 day!")
-        alert[server] = True
-    if time_left > timedelta(days=4):
-        alert[server] = False
+        if time_left < timedelta(hours=10) and not alert_sa[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Genshin Impact Spiral Abyss resets in n day!")
+            alert_sa[server] = True
+        if time_left > timedelta(days=4):
+            alert_sa[server] = False
 
-@tasks.loop(minutes=5)
-async def sa_reset_warning_na():
-    global alert
-    server = "NA"
-    time_left = get_time_left_sa(server)
 
-    if time_left is None:
-        return
-    
-    if time_left < timedelta(days=4) and not alert[server]:
-        channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
-        if channel:
-            await channel.send(f"Genshin Impact Spiral Abyss resets in 1 day!")
-        alert[server] = True
-    if time_left > timedelta(days=4):
-        alert[server] = False
 
 @tasks.loop(minutes=5)
 async def it_reset_warning_as():
