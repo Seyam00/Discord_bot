@@ -3,6 +3,7 @@ import discord
 import logging
 import random
 from discord.ext import commands, tasks
+from discord.ext.commands import when_mentioned_or
 from datetime import datetime, timedelta, timezone
 import asyncio
 
@@ -12,7 +13,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix=when_mentioned_or("_"), intents=intents)
 
 class Slapper(commands.Converter):
     async def convert(self, ctx, argument):
@@ -28,8 +29,10 @@ async def slap(ctx, *, reason: Slapper):
 async def on_ready():
     print(f"We have logged in as {bot.user}")
     sa_reset_warning_as.start()
-    #sa_reset_warning_eu.start()
-    #sa_reset_warning_na.start()
+    it_reset_warning_as.start()
+    print([c.name for c in bot.commands])
+
+
 
 @bot.command()
 async def hello(ctx):
@@ -72,7 +75,7 @@ def get_time_left_sa(server):
     else:
         next_month = now.month + 1 if now.month < 12 else 1
         next_year = now.year if now.month < 12 else now.year + 1
-        reset_date = datetime(next_year, next_month, 1, 4, 0, 0)
+        reset_date = datetime(next_year, next_month, 1, 4, 0, 0, tzinfo=now.tzinfo)
 
     return reset_date - now
 
@@ -91,27 +94,31 @@ def get_time_left_it(server):
     else:
         next_month = now.month + 1 if now.month < 12 else 1
         next_year = now.year if now.month < 12 else now.year + 1
-        reset_date = datetime(next_year, next_month, 1, 4, 0, 0)
+        reset_date = datetime(next_year, next_month, 1, 4, 0, 0, tzinfo=now.tzinfo)
 
     return reset_date - now
 
 
 
-@bot.command()
+@bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral"])
 async def spiral_abyss(ctx, server: str):
-    time_left = get_time_left_sa(server)
-    if time_left is None:
-        await ctx.send("Invalid Server! Use AS, EU or NA.")
+    time_left_sa = get_time_left_sa(server)
+    if time_left_sa is None:
+        await ctx.send("huh?")
         return
-    await ctx.send(f"Time until next Spiral Abyss reset on {server} server: {time_left}")
+    await ctx.send(f"Time until next Spiral Abyss reset on {server} server: {time_left_sa}")
 
-@bot.command()
-async def imaginarium_theatre(ctx, server: str):
-    time_left = get_time_left_it(server)
-    if time_left is None:
-        await ctx.send("Invalid Server! Use AS, EU or NA.")
+@bot.command(name="imaginarium_theater", aliases=["it", "theater", "It", "Theater", "Imaginarium_theater", "IT"])
+async def it(ctx, server: str):
+    time_left_it = get_time_left_it(server)
+    if time_left_it is None:
+        await ctx.send("huh?")
         return
-    await ctx.send(f"Time until next Imaginarium Theatre reset on {server} server: {time_left}")
+    await ctx.send(f"Time until next Imaginarium Theater on {server} server: {time_left_it}")
+
+@it.error
+async def it_error(ctx, error):
+    await ctx.send(f"Error: `{error}`\nUsage: `_it AS|EU|NA`  (example: `_it NA`)")
 
 alert_sa = {"AS" : False, "EU" : False, "NA" : False}
 
@@ -120,37 +127,38 @@ alert_sa = {"AS" : False, "EU" : False, "NA" : False}
 async def sa_reset_warning_as():
     
     for server in SERVER_OFFSET_HOURS:
-        time_left = get_time_left_sa(server)
+        time_left_sa = get_time_left_sa(server)
 
-        if time_left is None:
-            return
+        if time_left_sa is None:
+            continue
     
-        if time_left < timedelta(hours=10) and not alert_sa[server]:
+        if time_left_sa < timedelta(days=1) and not alert_sa[server]:
             channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
             if channel:
-                await channel.send(f"Genshin Impact Spiral Abyss resets in n day!")
+                await channel.send(f"Genshin Impact Spiral Abyss resets in 1 day!")
             alert_sa[server] = True
-        if time_left > timedelta(days=4):
+        if time_left_sa > timedelta(days=4):
             alert_sa[server] = False
 
 
+alert_it = {"AS" : False, "EU" : False, "NA" : False}
 
 @tasks.loop(minutes=5)
 async def it_reset_warning_as():
-    global alert
-    server = "AS"
-    time_left = get_time_left_it(server)
 
-    if time_left is None:
-        return
-    
-    if time_left < timedelta(days=4) and not alert[server]:
-        channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
-        if channel:
-            await channel.send(f"Genshin Impact Imaginarium Theatre resets in 1 day!")
-        alert[server] = True
-    if time_left > timedelta(days=4):
-        alert[server] = False
+    for server in SERVER_OFFSET_HOURS:
+        time_left_it = get_time_left_it(server)
+
+        if time_left_it is None:
+            continue
+
+        if time_left_it < timedelta(days=1) and not alert_it[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Genshin Impact Imaginarium Theater resets in 1 day!")
+            alert_it[server] = True
+        if time_left_it > timedelta(days=4):
+            alert_it[server] = False
 
 
 
