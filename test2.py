@@ -68,6 +68,7 @@ async def on_ready():
     so_reset_warning_as.start()
     moc_reset_warning_as.start()
     pf_reset_warning_as.start()
+    as_reset_warning_as.start()
     print([c.name for c in bot.commands])
 #------------------------------------------------------------------------------------------------------------------
 
@@ -182,7 +183,27 @@ def get_time_left_pf(server):
 
     return remaining if remaining.total_seconds() > 0 else timedelta(0)
     
+def get_time_left_as(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
+    
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
 
+    now = datetime.now(tz)
+
+    anchor = datetime(year=2025, month=8, day=18, hour=4, minute=0, tzinfo=tz)
+    cycle = timedelta(days=42)
+
+    if now <= anchor:
+        reset = anchor
+    else:
+        cycle_elapsed = (now - anchor) // cycle
+        reset = anchor + (cycle_elapsed + 1) * cycle
+
+    remaining = reset - now
+
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
     
 
     
@@ -229,6 +250,14 @@ async def memory_of_chaos(ctx, server: str):
         await ctx.send("huh?")
         return
     await ctx.send(f"Time until next Pure Fiction reset on {server} server: {time_left_pf}")
+
+@bot.command(name="apocalyptic_shadow", aliases=["AS", "As", "as", "apocalyptic shadow", "Apocalyptic shadow", "apocalyptic", "Apocalyptic", "shadow", "Shadow"])
+async def memory_of_chaos(ctx, server: str):
+    time_left_as = get_time_left_as(server)
+    if time_left_as is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until next Apocalyptic Shadow reset on {server} server: {time_left_as}")
 #------------------------------------------------------------------------------------------------------------------
 
 #this was for debugging, can be ignored for now
@@ -337,6 +366,25 @@ async def pf_reset_warning_as():
             alert_pf[server] = True
         if time_left_pf > timedelta(days=4):
             alert_pf[server] = False
+
+alert_as = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def as_reset_warning_as():
+
+    for server in SERVER_OFFSET_HOURS:
+        time_left_as = get_time_left_as(server)
+
+        if time_left_as is None:
+            continue
+
+        if time_left_as < timedelta(days=1) and not alert_as[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Honkai Star Rail Apocalyptic Shadow resets in 1 day!")
+            alert_as[server] = True
+        if time_left_as > timedelta(days=4):
+            alert_as[server] = False
 #------------------------------------------------------------------------------------------------------------------
 
 #part of logger
