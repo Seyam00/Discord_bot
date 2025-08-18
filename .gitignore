@@ -1,3 +1,5 @@
 botT.py
 __pycache__
 discord.log
+.env
+*.env

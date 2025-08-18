@@ -1,4 +1,4 @@
-# part of main
+#part of main
 #------------------------------------------------------------------------------------------------------------------
 import botT 
 import discord
@@ -8,6 +8,17 @@ from discord.ext import commands, tasks
 from discord.ext.commands import when_mentioned_or
 from datetime import datetime, timedelta, timezone
 import asyncio
+from dotenv import load_dotenv
+import os
+
+
+load_dotenv()
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+
+if not TOKEN:
+    raise ValueError("No DISCORD_BOT_TOKEN found in environment!")
+
+
 
 #await bot.reload_extension()
 
@@ -54,6 +65,8 @@ async def on_ready():
     print(f"We have logged in as {bot.user}")
     sa_reset_warning_as.start()
     it_reset_warning_as.start()
+    so_reset_warning_as.start()
+    moc_reset_warning_as.start()
     print([c.name for c in bot.commands])
 #------------------------------------------------------------------------------------------------------------------
 
@@ -106,9 +119,53 @@ def get_time_left_it(server):
         reset_date = datetime(next_year, next_month, 1, 4, 0, 0, tzinfo=now.tzinfo)
 
     return reset_date - now
+
+
+
+def get_time_left_so(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
+
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
+
+    now = datetime.now(tz)
+
+    genshin_patch_day = datetime(year=2025, month=8, day=6, hour=4, minute=0, tzinfo=tz)
+    next_patch_day    = datetime(year=2025, month=9, day=9, hour=4, minute=0, tzinfo=tz)
+
+    remaining = next_patch_day - now
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
+
+def get_time_left_moc(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
+    
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
+
+    now = datetime.now(tz)
+
+    anchor = datetime(year=2025, month=6, day=23, hour=4, minute=0, tzinfo=tz)
+    cycle = timedelta(days=42)
+
+    if now <= anchor:
+        reset = anchor
+    else:
+        cycle_elapsed = (now - anchor) // cycle
+        reset = anchor + (cycle_elapsed + 1) * cycle
+
+    remaining = reset - now
+
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
+    
+
+    
+
+    
 #------------------------------------------------------------------------------------------------------------------
 
-# These 2 commands show how much time left on these 2 modes when called for, somewhat small and simple so I am guessign these can be in a single file?
+#These 2 commands show how much time left on these 2 modes when called for, somewhat small and simple so I am guessign these can be in a single file?
 #------------------------------------------------------------------------------------------------------------------
 @bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral"])
 async def spiral_abyss(ctx, server: str):
@@ -124,7 +181,23 @@ async def it(ctx, server: str):
     if time_left_it is None:
         await ctx.send("huh?")
         return
-    await ctx.send(f"Time until next Imaginarium Theater on {server} server: {time_left_it}")
+    await ctx.send(f"Time until next Imaginarium Theater reset on {server} server: {time_left_it}")
+
+@bot.command(name="stygian_onslaught", aliases=["stygian", "Stygian", "onslaught", "Onslaught", "so", "So", "SO", "sO"])
+async def stygian_onslaught(ctx, server: str):
+    time_left_so = get_time_left_so(server)
+    if time_left_so is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until Stygian Onslaught ends on {server} server: {time_left_so}")
+
+@bot.command(name="memory_of_chaos", aliases=["moc", "MOC", "Moc", "memory"])
+async def memory_of_chaos(ctx, server: str):
+    time_left_moc = get_time_left_moc(server)
+    if time_left_moc is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until next Memory of Chaos reset on {server} server: {time_left_moc}")
 #------------------------------------------------------------------------------------------------------------------
 
 #this was for debugging, can be ignored for now
@@ -133,11 +206,13 @@ async def it(ctx, server: str):
 async def it_error(ctx, error):
     await ctx.send(f"Error: `{error}`\nUsage: `_it AS|EU|NA`  (example: `_it NA`)")
 
-alert_sa = {"AS" : False, "EU" : False, "NA" : False}
+
 #------------------------------------------------------------------------------------------------------------------
 
-# These are the alert functions that triggers automatically when conditions are met, I am not sure if I should make seperate files for these or just one for all alerts
+#These are the alert functions that triggers automatically when conditions are met, I am not sure if I should make seperate files for these or just one for all alerts
 #------------------------------------------------------------------------------------------------------------------
+alert_sa = {"AS" : False, "EU" : False, "NA" : False}
+
 @tasks.loop(minutes=5)
 async def sa_reset_warning_as():
     
@@ -174,6 +249,44 @@ async def it_reset_warning_as():
             alert_it[server] = True
         if time_left_it > timedelta(days=4):
             alert_it[server] = False
+
+alert_so = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def so_reset_warning_as():
+
+    for server in SERVER_OFFSET_HOURS:
+        time_left_so = get_time_left_so(server)
+
+        if time_left_so is None:
+            continue
+
+        if time_left_so < timedelta(days=1) and not alert_so[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Genshin Impact Stygian Onslaught resets in 1 day!")
+            alert_so[server] = True
+        if time_left_so > timedelta(days=4):
+            alert_so[server] = False
+
+alert_moc = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def moc_reset_warning_as():
+
+    for server in SERVER_OFFSET_HOURS:
+        time_left_moc = get_time_left_moc(server)
+
+        if time_left_moc is None:
+            continue
+
+        if time_left_moc < timedelta(days=1) and not alert_moc[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Honkai Star Rail Memory of Chaos resets in 1 day!")
+            alert_moc[server] = True
+        if time_left_moc > timedelta(days=4):
+            alert_moc[server] = False
 #------------------------------------------------------------------------------------------------------------------
 
 #part of logger
@@ -187,4 +300,4 @@ logger.addHandler(handler)
 #This should be in main ig
 bot.run(botT.DISCORD_TOKEN, log_handler=None)
 
-###
+##
