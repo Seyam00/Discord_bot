@@ -67,6 +67,7 @@ async def on_ready():
     it_reset_warning_as.start()
     so_reset_warning_as.start()
     moc_reset_warning_as.start()
+    pf_reset_warning_as.start()
     print([c.name for c in bot.commands])
 #------------------------------------------------------------------------------------------------------------------
 
@@ -158,6 +159,28 @@ def get_time_left_moc(server):
     remaining = reset - now
 
     return remaining if remaining.total_seconds() > 0 else timedelta(0)
+
+def get_time_left_pf(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
+    
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
+
+    now = datetime.now(tz)
+
+    anchor = datetime(year=2025, month=7, day=21, hour=4, minute=0, tzinfo=tz)
+    cycle = timedelta(days=42)
+
+    if now <= anchor:
+        reset = anchor
+    else:
+        cycle_elapsed = (now - anchor) // cycle
+        reset = anchor + (cycle_elapsed + 1) * cycle
+
+    remaining = reset - now
+
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
     
 
     
@@ -167,7 +190,7 @@ def get_time_left_moc(server):
 
 #These 2 commands show how much time left on these 2 modes when called for, somewhat small and simple so I am guessign these can be in a single file?
 #------------------------------------------------------------------------------------------------------------------
-@bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral"])
+@bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral", "Spiral abyss", "spiral abyss"])
 async def spiral_abyss(ctx, server: str):
     time_left_sa = get_time_left_sa(server)
     if time_left_sa is None:
@@ -175,7 +198,7 @@ async def spiral_abyss(ctx, server: str):
         return
     await ctx.send(f"Time until next Spiral Abyss reset on {server} server: {time_left_sa}")
 
-@bot.command(name="imaginarium_theater", aliases=["it", "theater", "It", "Theater", "Imaginarium_theater", "IT"])
+@bot.command(name="imaginarium_theater", aliases=["it", "theater", "It", "Theater", "Imaginarium_theater", "IT", "Imaginarium theater", "imaginarium theater"])
 async def it(ctx, server: str):
     time_left_it = get_time_left_it(server)
     if time_left_it is None:
@@ -183,7 +206,7 @@ async def it(ctx, server: str):
         return
     await ctx.send(f"Time until next Imaginarium Theater reset on {server} server: {time_left_it}")
 
-@bot.command(name="stygian_onslaught", aliases=["stygian", "Stygian", "onslaught", "Onslaught", "so", "So", "SO", "sO"])
+@bot.command(name="stygian_onslaught", aliases=["stygian", "Stygian", "onslaught", "Onslaught", "so", "So", "SO", "sO", "stygian onslaught", "Stygian onslaught"])
 async def stygian_onslaught(ctx, server: str):
     time_left_so = get_time_left_so(server)
     if time_left_so is None:
@@ -198,6 +221,14 @@ async def memory_of_chaos(ctx, server: str):
         await ctx.send("huh?")
         return
     await ctx.send(f"Time until next Memory of Chaos reset on {server} server: {time_left_moc}")
+
+@bot.command(name="pure_fiction", aliases=["PF", "Pf", "pf", "pure", "fiction", "pure fiction", "Pure fiction"])
+async def memory_of_chaos(ctx, server: str):
+    time_left_pf = get_time_left_pf(server)
+    if time_left_pf is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until next Pure Fiction reset on {server} server: {time_left_pf}")
 #------------------------------------------------------------------------------------------------------------------
 
 #this was for debugging, can be ignored for now
@@ -287,6 +318,25 @@ async def moc_reset_warning_as():
             alert_moc[server] = True
         if time_left_moc > timedelta(days=4):
             alert_moc[server] = False
+
+alert_pf = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def pf_reset_warning_as():
+
+    for server in SERVER_OFFSET_HOURS:
+        time_left_pf = get_time_left_pf(server)
+
+        if time_left_pf is None:
+            continue
+
+        if time_left_pf < timedelta(days=1) and not alert_pf[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Honkai Star Rail Pure Fiction resets in 1 day!")
+            alert_pf[server] = True
+        if time_left_pf > timedelta(days=4):
+            alert_pf[server] = False
 #------------------------------------------------------------------------------------------------------------------
 
 #part of logger
