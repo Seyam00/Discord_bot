@@ -1,4 +1,11 @@
 botT.py
+gi_endgame_alerts.py
+gi_endgames.py
+logging_conf.py
+main.py
+patch_day_gi.py
+rand_comm.py
+time_calc.py
 __pycache__
 discord.log
 .env
