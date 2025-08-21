@@ -1,6 +1,6 @@
 #part of main
 #------------------------------------------------------------------------------------------------------------------
-import botT 
+#import botT 
 import discord
 import logging
 import random
@@ -63,13 +63,17 @@ async def joined(ctx, *, member: discord.Member):
 @bot.event
 async def on_ready():
     print(f"We have logged in as {bot.user}")
-    sa_reset_warning_as.start()
-    it_reset_warning_as.start()
-    so_reset_warning_as.start()
-    moc_reset_warning_as.start()
-    pf_reset_warning_as.start()
-    as_reset_warning_as.start()
+
+    for i in (
+        sa_reset_warning_as, it_reset_warning_as, so_reset_warning_as,
+        moc_reset_warning_as, pf_reset_warning_as, as_reset_warning_as,
+        sd_reset_warning_as, da_reset_warning_as
+    ):
+        if not i.is_running():
+            i.start()
+
     print([c.name for c in bot.commands])
+
 #------------------------------------------------------------------------------------------------------------------
 
 #This is where I calculate the times left for both 2 functions, there will be at least 6 more of these in the future with some little changes
@@ -205,13 +209,54 @@ def get_time_left_as(server):
 
     return remaining if remaining.total_seconds() > 0 else timedelta(0)
     
-
+def get_time_left_sd(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
     
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
+
+    now = datetime.now(tz)
+
+    anchor = datetime(year=2025, month=8, day=15, hour=4, minute=0, tzinfo=tz)
+    cycle = timedelta(days=14)
+
+    if now <= anchor:
+        reset = anchor
+    else:
+        cycle_elapsed = (now - anchor) // cycle
+        reset = anchor + (cycle_elapsed + 1) * cycle
+
+    remaining = reset - now
+
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
+
+def get_time_left_da(server):
+    server = server.upper()
+    if server not in SERVER_OFFSET_HOURS:
+        return None
+    
+    tz = timezone(timedelta(hours=SERVER_OFFSET_HOURS[server]))
+
+    now = datetime.now(tz)
+
+    anchor = datetime(year=2025, month=8, day=8, hour=4, minute=0, tzinfo=tz)
+    cycle = timedelta(days=14)
+
+    if now <= anchor:
+        reset = anchor
+    else:
+        cycle_elapsed = (now - anchor) // cycle
+        reset = anchor + (cycle_elapsed + 1) * cycle
+
+    remaining = reset - now
+
+    return remaining if remaining.total_seconds() > 0 else timedelta(0)
 #------------------------------------------------------------------------------------------------------------------
 
 #These 2 commands show how much time left on these 2 modes when called for, somewhat small and simple so I am guessign these can be in a single file?
 #------------------------------------------------------------------------------------------------------------------
-@bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral", "Spiral abyss", "spiral abyss"])
+@bot.command(name="spiral_abyss", aliases=["sa", "abyss", "spiralabyss", "Sa", "SA", "Abyss", "Spiral_abyss", "spiral", "Spiral"])
 async def spiral_abyss(ctx, server: str):
     time_left_sa = get_time_left_sa(server)
     if time_left_sa is None:
@@ -219,7 +264,7 @@ async def spiral_abyss(ctx, server: str):
         return
     await ctx.send(f"Time until next Spiral Abyss reset on {server} server: {time_left_sa}")
 
-@bot.command(name="imaginarium_theater", aliases=["it", "theater", "It", "Theater", "Imaginarium_theater", "IT", "Imaginarium theater", "imaginarium theater"])
+@bot.command(name="imaginarium_theater", aliases=["it", "theater", "It", "Theater", "Imaginarium_theater", "IT"])
 async def it(ctx, server: str):
     time_left_it = get_time_left_it(server)
     if time_left_it is None:
@@ -227,7 +272,7 @@ async def it(ctx, server: str):
         return
     await ctx.send(f"Time until next Imaginarium Theater reset on {server} server: {time_left_it}")
 
-@bot.command(name="stygian_onslaught", aliases=["stygian", "Stygian", "onslaught", "Onslaught", "so", "So", "SO", "sO", "stygian onslaught", "Stygian onslaught"])
+@bot.command(name="stygian_onslaught", aliases=["stygian", "Stygian", "onslaught", "Onslaught", "so", "So", "SO", "sO"])
 async def stygian_onslaught(ctx, server: str):
     time_left_so = get_time_left_so(server)
     if time_left_so is None:
@@ -243,21 +288,37 @@ async def memory_of_chaos(ctx, server: str):
         return
     await ctx.send(f"Time until next Memory of Chaos reset on {server} server: {time_left_moc}")
 
-@bot.command(name="pure_fiction", aliases=["PF", "Pf", "pf", "pure", "fiction", "pure fiction", "Pure fiction"])
-async def memory_of_chaos(ctx, server: str):
+@bot.command(name="pure_fiction", aliases=["PF", "Pf", "pf", "pure", "fiction"])
+async def pure_fiction(ctx, server: str):
     time_left_pf = get_time_left_pf(server)
     if time_left_pf is None:
         await ctx.send("huh?")
         return
     await ctx.send(f"Time until next Pure Fiction reset on {server} server: {time_left_pf}")
 
-@bot.command(name="apocalyptic_shadow", aliases=["AS", "As", "as", "apocalyptic shadow", "Apocalyptic shadow", "apocalyptic", "Apocalyptic", "shadow", "Shadow"])
-async def memory_of_chaos(ctx, server: str):
+@bot.command(name="apocalyptic_shadow", aliases=["AS", "As", "as", "apocalyptic", "Apocalyptic", "shadow", "Shadow"])
+async def apocalyptic_shadow(ctx, server: str):
     time_left_as = get_time_left_as(server)
     if time_left_as is None:
         await ctx.send("huh?")
         return
     await ctx.send(f"Time until next Apocalyptic Shadow reset on {server} server: {time_left_as}")
+
+@bot.command(name="shiyu_defense", aliases=["shiyu", "defense", "sd", "Sd", "SD", "sD", "Shiyu", "Defense"])
+async def shiyu_defense(ctx, server: str):
+    time_left_sd = get_time_left_sd(server)
+    if time_left_sd is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until next Shiyu Defense reset on {server} server: {time_left_sd}")
+
+@bot.command(name="deadly_assault", aliases=["da", "Da", "DA", "deadly", "Deadly", "assault", "Assault"])
+async def deadly_assault(ctx, server: str):
+    time_left_da = get_time_left_da(server)
+    if time_left_da is None:
+        await ctx.send("huh?")
+        return
+    await ctx.send(f"Time until next Deadly Assault reset on {server} server: {time_left_da}")
 #------------------------------------------------------------------------------------------------------------------
 
 #this was for debugging, can be ignored for now
@@ -385,6 +446,44 @@ async def as_reset_warning_as():
             alert_as[server] = True
         if time_left_as > timedelta(days=4):
             alert_as[server] = False
+
+alert_sd = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def sd_reset_warning_as():
+    
+    for server in SERVER_OFFSET_HOURS:
+        time_left_sd = get_time_left_sd(server)
+
+        if time_left_sd is None:
+                continue
+                
+        if time_left_sd < timedelta(days=1) and not alert_sd[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Zenless Zone Zero Shiyu Defense resets in 1 day!")
+            alert_sd[server] = True
+        if time_left_sd > timedelta(days=4):
+            alert_sd[server] = False
+
+alert_da = {"AS" : False, "EU" : False, "NA" : False}
+
+@tasks.loop(minutes=5)
+async def da_reset_warning_as():
+
+    for server in SERVER_OFFSET_HOURS:
+        time_left_da = get_time_left_da(server)
+
+        if time_left_da is None:
+            continue
+
+        if time_left_da < timedelta(days=1) and not alert_da[server]:
+            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            if channel:
+                await channel.send(f"Zenless Zone Zero Deadly Assault resets in 1 day!")
+            alert_da[server] = True
+        if time_left_da > timedelta(days=4):
+            alert_da[server] = False
 #------------------------------------------------------------------------------------------------------------------
 
 #part of logger
@@ -396,6 +495,6 @@ logger.addHandler(handler)
 #------------------------------------------------------------------------------------------------------------------
 
 #This should be in main ig
-bot.run(botT.DISCORD_TOKEN, log_handler=None)
+bot.run(TOKEN, log_handler=None)
 
 ##
