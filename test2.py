@@ -498,3 +498,4 @@ logger.addHandler(handler)
 bot.run(TOKEN, log_handler=None)
 
 ##
+#Testing deployment protocol
