@@ -1,70 +1,14 @@
-name: Deploy to VM
+name: Sanity
 
 on:
   push:
-    branches: [ "main" ]
-
-concurrency:
-  group: deploy-vm
-  cancel-in-progress: true
+    branches:
+      - main
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            set -euxo pipefail
-
-            echo "== cd into repo =="
-            cd "$HOME/Discord_Bot"
-            pwd
-
-            echo "== git fetch/reset =="
-            git fetch origin main
-            git reset --hard origin/main
-
-            echo "== ensure venv python exists =="
-            test -x "$HOME/Discord_Bot/.venv/bin/python" || { echo "Missing venv python"; exit 1; }
-
-            echo "== install deps if requirements.txt exists =="
-            if [ -f requirements.txt ]; then "$HOME/Discord_Bot/.venv/bin/pip" install -r requirements.txt; fi
-
-            echo "== ensure systemd service exists =="
-            if [ ! -f /etc/systemd/system/discordbot.service ]; then
-              sudo tee /etc/systemd/system/discordbot.service >/dev/null <<EOF
-[Unit]
-Description=Discord Bot
-After=network.target
-
-[Service]
-User=$(whoami)
-WorkingDirectory=$HOME/Discord_Bot
-EnvironmentFile=$HOME/.config/discordbot/bot.env
-ExecStart=$HOME/Discord_Bot/.venv/bin/python $HOME/Discord_Bot/test2.py
-Restart=always
-RestartSec=3
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-EOF
-            fi
-
-            echo "== reload/enable/restart service =="
-            sudo systemctl daemon-reload
-            sudo systemctl enable discordbot || true
-            sudo systemctl restart discordbot
-
-            echo "== service status (short) =="
-            sudo systemctl --no-pager --full status discordbot || true
-
-            echo "== journal tail =="
-            journalctl -u discordbot -n 100 --no-pager || true
+      - name: Echo OK
+        run: echo "OK"
 
