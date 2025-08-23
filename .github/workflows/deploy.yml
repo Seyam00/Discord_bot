@@ -29,6 +29,9 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            echo "== ensure venv python exists =="
+            test -x "$HOME/Discord_Bot/.venv/bin/python" || { echo "Missing venv python"; exit 1; }
+
             echo "== install deps if requirements.txt exists =="
             if [ -f requirements.txt ]; then "$HOME/Discord_Bot/.venv/bin/pip" install -r requirements.txt; fi
 
@@ -63,5 +66,5 @@ EOF
             sudo systemctl --no-pager --full status discordbot || true
 
             echo "== journal tail =="
-            journalctl -u discordbot -n 50 --no-pager || true
+            journalctl -u discordbot -n 100 --no-pager || true
 
