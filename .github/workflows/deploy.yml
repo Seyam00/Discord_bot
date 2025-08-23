@@ -2,7 +2,7 @@ name: Deploy to VM
 
 on:
   push:
-    branches: [ "main" ]   # if your branch is not "main", change this
+    branches: [ "main" ]   # change if your default branch is different
 
 concurrency:
   group: deploy-vm
@@ -19,40 +19,35 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
-            set -e
-            cd /home/ubuntu/Discord_Bot
-            # pull latest commit from main
-            git fetch origin main
-            git reset --hard origin/main
-            # install deps if requirements.txt exists (safe if missing)
-            if [ -f requirements.txt ]; then /home/ubuntu/Discord_Bot/.venv/bin/pip install -r requirements.txt; fi
-            # restart your bot
-            sudo systemctl restart discordbot
-            # brief status/logs for debugging
-            sudo systemctl --no-pager --full status discordbot || true
-            journalctl -u discordbot -n 50 --no-pager || true
+            set -euxo pipefail
+            echo "== whoami/host =="
+            whoami
+            hostname
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            set -e
+            echo "== list /home/ubuntu =="
+            ls -la /home/ubuntu || true
+
+            echo "== check repo path =="
+            ls -ld /home/ubuntu/Discord_Bot || true
+
+            echo "== cd into repo =="
             cd /home/ubuntu/Discord_Bot
-            # pull latest commit from main
+            pwd
+
+            echo "== git status/fetch/reset =="
+            git rev-parse --is-inside-work-tree
             git fetch origin main
             git reset --hard origin/main
-            # install deps if requirements.txt exists (safe if missing)
+
+            echo "== install deps if requirements.txt exists =="
             if [ -f requirements.txt ]; then /home/ubuntu/Discord_Bot/.venv/bin/pip install -r requirements.txt; fi
-            # restart your bot
+
+            echo "== restart service =="
             sudo systemctl restart discordbot
-            # brief status/logs for debugging
+
+            echo "== service status =="
             sudo systemctl --no-pager --full status discordbot || true
+
+            echo "== journal tail =="
             journalctl -u discordbot -n 50 --no-pager || true
 
