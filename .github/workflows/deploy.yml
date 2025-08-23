@@ -23,45 +23,41 @@ jobs:
           script: |
             set -euxo pipefail
 
-            # 1) repo
+            # 1) Update repo on VM
             cd "$HOME/Discord_Bot"
             git fetch origin main
             git reset --hard origin/main
 
-            # 2) venv sanity (must exist from your manual setup)
+            # 2) Ensure venv python exists
             test -x "$HOME/Discord_Bot/.venv/bin/python"
 
-            # 3) create/update systemd service WITHOUT heredoc (YAML-safe)
+            # 3) Create/overwrite systemd service (YAML-safe; no heredoc)
             TMP_SERVICE="/tmp/discordbot.service"
             : > "$TMP_SERVICE"
-            printf '%s\n' '[Unit]'                                   >> "$TMP_SERVICE"
-            printf '%s\n' 'Description=Discord Bot'                  >> "$TMP_SERVICE"
-            printf '%s\n' 'After=network.target'                     >> "$TMP_SERVICE"
-            printf '%s\n' ''                                         >> "$TMP_SERVICE"
-            printf '%s\n' '[Service]'                                >> "$TMP_SERVICE"
-            printf '%s\n' "User=$(whoami)"                           >> "$TMP_SERVICE"
-            printf '%s\n' "WorkingDirectory=$HOME/Discord_Bot"       >> "$TMP_SERVICE"
-            printf '%s\n' "EnvironmentFile=$HOME/.config/discordbot/bot.env" >> "$TMP_SERVICE"
+            printf '%s\n' '[Unit]'                                                     >> "$TMP_SERVICE"
+            printf '%s\n' 'Description=Discord Bot'                                    >> "$TMP_SERVICE"
+            printf '%s\n' 'After=network.target'                                       >> "$TMP_SERVICE"
+            printf '%s\n' ''                                                           >> "$TMP_SERVICE"
+            printf '%s\n' '[Service]'                                                  >> "$TMP_SERVICE"
+            printf '%s\n' "User=$(whoami)"                                             >> "$TMP_SERVICE"
+            printf '%s\n' "WorkingDirectory=$HOME/Discord_Bot"                         >> "$TMP_SERVICE"
+            printf '%s\n' "EnvironmentFile=$HOME/.config/discordbot/bot.env"          >> "$TMP_SERVICE"
             printf '%s\n' "ExecStart=$HOME/Discord_Bot/.venv/bin/python $HOME/Discord_Bot/test2.py" >> "$TMP_SERVICE"
-            printf '%s\n' 'Restart=always'                           >> "$TMP_SERVICE"
-            printf '%s\n' 'RestartSec=3'                             >> "$TMP_SERVICE"
-            printf '%s\n' 'NoNewPrivileges=true'                     >> "$TMP_SERVICE"
-            printf '%s\n' 'PrivateTmp=true'                          >> "$TMP_SERVICE"
-            printf '%s\n' ''                                         >> "$TMP_SERVICE"
-            printf '%s\n' '[Install]'                                >> "$TMP_SERVICE"
-            printf '%s\n' 'WantedBy=multi-user.target'               >> "$TMP_SERVICE"
+            printf '%s\n' 'Restart=always'                                             >> "$TMP_SERVICE"
+            printf '%s\n' 'RestartSec=3'                                               >> "$TMP_SERVICE"
+            printf '%s\n' 'NoNewPrivileges=true'                                       >> "$TMP_SERVICE"
+            printf '%s\n' 'PrivateTmp=true'                                            >> "$TMP_SERVICE"
+            printf '%s\n' ''                                                           >> "$TMP_SERVICE"
+            printf '%s\n' '[Install]'                                                  >> "$TMP_SERVICE"
+            printf '%s\n' 'WantedBy=multi-user.target'                                 >> "$TMP_SERVICE"
 
-            if [ ! -f /etc/systemd/system/discordbot.service ] || ! cmp -s "$TMP_SERVICE" /etc/systemd/system/discordbot.service; then
-              sudo mv "$TMP_SERVICE" /etc/systemd/system/discordbot.service
-              sudo chown root:root /etc/systemd/system/discordbot.service
-              sudo chmod 644 /etc/systemd/system/discordbot.service
-              sudo systemctl daemon-reload
-              sudo systemctl enable discordbot || true
-            else
-              rm -f "$TMP_SERVICE"
-            fi
+            sudo mv "$TMP_SERVICE" /etc/systemd/system/discordbot.service
+            sudo chown root:root /etc/systemd/system/discordbot.service
+            sudo chmod 644 /etc/systemd/system/discordbot.service
+            sudo systemctl daemon-reload
+            sudo systemctl enable discordbot || true
 
-            # 4) restart & show logs
+            # 4) Restart & show logs
             sudo systemctl restart discordbot
             sudo systemctl --no-pager --full status discordbot || true
             journalctl -u discordbot -n 100 --no-pager || true
