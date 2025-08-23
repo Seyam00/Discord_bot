@@ -1,14 +1,74 @@
-name: Sanity
+name: Deploy to VM
 
 on:
   push:
     branches:
       - main
 
+concurrency:
+  group: deploy-vm
+  cancel-in-progress: true
+
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Echo OK
-        run: echo "OK"
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euxo pipefail
+
+            # 1) repo
+            cd "$HOME/Discord_Bot"
+            git fetch origin main
+            git reset --hard origin/main
+
+            # 2) venv sanity (must exist from your manual setup)
+            test -x "$HOME/Discord_Bot/.venv/bin/python"
+
+            # 3) create service if missing (use temp file instead of heredoc inside YAML)
+            TMP_SERVICE="/tmp/discordbot.service"
+            cat > "$TMP_SERVICE" << 'SERVICE'
+[Unit]
+Description=Discord Bot
+After=network.target
+
+[Service]
+User=__USER__
+WorkingDirectory=__HOME__/Discord_Bot
+EnvironmentFile=__HOME__/.config/discordbot/bot.env
+ExecStart=__HOME__/Discord_Bot/.venv/bin/python __HOME__/Discord_Bot/test2.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+
+            # substitute HOME and USER safely
+            sed -i "s|__HOME__|$HOME|g" "$TMP_SERVICE"
+            sed -i "s|__USER__|$(whoami)|g" "$TMP_SERVICE"
+
+            # install service if not present or changed
+            if [ ! -f /etc/systemd/system/discordbot.service ] || ! cmp -s "$TMP_SERVICE" /etc/systemd/system/discordbot.service; then
+              sudo mv "$TMP_SERVICE" /etc/systemd/system/discordbot.service
+              sudo chown root:root /etc/systemd/system/discordbot.service
+              sudo chmod 644 /etc/systemd/system/discordbot.service
+              sudo systemctl daemon-reload
+              sudo systemctl enable discordbot || true
+            else
+              rm -f "$TMP_SERVICE"
+            fi
+
+            # 4) restart & show logs
+            sudo systemctl restart discordbot
+            sudo systemctl --no-pager --full status discordbot || true
+            journalctl -u discordbot -n 100 --no-pager || true
 
