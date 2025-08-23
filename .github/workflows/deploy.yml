@@ -1,0 +1,34 @@
+name: Deploy to VM
+
+on:
+  push:
+    branches: [ "main" ]   # if your branch is not "main", change this
+
+concurrency:
+  group: deploy-vm
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+            cd /home/ubuntu/Discord_Bot
+            # pull latest commit from main
+            git fetch origin main
+            git reset --hard origin/main
+            # install deps if requirements.txt exists (safe if missing)
+            if [ -f requirements.txt ]; then /home/ubuntu/Discord_Bot/.venv/bin/pip install -r requirements.txt; fi
+            # restart your bot
+            sudo systemctl restart discordbot
+            # brief status/logs for debugging
+            sudo systemctl --no-pager --full status discordbot || true
+            journalctl -u discordbot -n 50 --no-pager || true
+
