@@ -344,7 +344,7 @@ async def sa_reset_warning_as():
             continue
     
         if time_left_sa < timedelta(days=1) and not alert_sa[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
             if channel:
                 await channel.send(f"Genshin Impact Spiral Abyss resets in 1 day!")
             alert_sa[server] = True
@@ -364,7 +364,7 @@ async def it_reset_warning_as():
             continue
 
         if time_left_it < timedelta(days=1) and not alert_it[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
             if channel:
                 await channel.send(f"Genshin Impact Imaginarium Theater resets in 1 day!")
             alert_it[server] = True
@@ -383,7 +383,7 @@ async def so_reset_warning_as():
             continue
 
         if time_left_so < timedelta(days=1) and not alert_so[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="genshin-general")
             if channel:
                 await channel.send(f"Genshin Impact Stygian Onslaught resets in 1 day!")
             alert_so[server] = True
@@ -402,7 +402,7 @@ async def moc_reset_warning_as():
             continue
 
         if time_left_moc < timedelta(days=1) and not alert_moc[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="star-rail-general")
             if channel:
                 await channel.send(f"Honkai Star Rail Memory of Chaos resets in 1 day!")
             alert_moc[server] = True
@@ -421,7 +421,7 @@ async def pf_reset_warning_as():
             continue
 
         if time_left_pf < timedelta(days=1) and not alert_pf[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="star-rail-general")
             if channel:
                 await channel.send(f"Honkai Star Rail Pure Fiction resets in 1 day!")
             alert_pf[server] = True
@@ -440,7 +440,7 @@ async def as_reset_warning_as():
             continue
 
         if time_left_as < timedelta(days=1) and not alert_as[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="star-rail-general")
             if channel:
                 await channel.send(f"Honkai Star Rail Apocalyptic Shadow resets in 1 day!")
             alert_as[server] = True
@@ -459,7 +459,7 @@ async def sd_reset_warning_as():
                 continue
                 
         if time_left_sd < timedelta(days=1) and not alert_sd[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="zzz-general")
             if channel:
                 await channel.send(f"Zenless Zone Zero Shiyu Defense resets in 1 day!")
             alert_sd[server] = True
@@ -478,7 +478,7 @@ async def da_reset_warning_as():
             continue
 
         if time_left_da < timedelta(days=1) and not alert_da[server]:
-            channel = discord.utils.get(bot.get_all_channels(), name="experimental-fuckery")
+            channel = discord.utils.get(bot.get_all_channels(), name="zzz-general")
             if channel:
                 await channel.send(f"Zenless Zone Zero Deadly Assault resets in 1 day!")
             alert_da[server] = True
