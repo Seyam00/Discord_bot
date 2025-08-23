@@ -31,32 +31,26 @@ jobs:
             # 2) venv sanity (must exist from your manual setup)
             test -x "$HOME/Discord_Bot/.venv/bin/python"
 
-            # 3) create service if missing (use temp file; avoids YAML heredoc issues)
+            # 3) create/update systemd service WITHOUT heredoc (YAML-safe)
             TMP_SERVICE="/tmp/discordbot.service"
-            cat > "$TMP_SERVICE" << 'SERVICE'
-[Unit]
-Description=Discord Bot
-After=network.target
+            : > "$TMP_SERVICE"
+            printf '%s\n' '[Unit]'                                   >> "$TMP_SERVICE"
+            printf '%s\n' 'Description=Discord Bot'                  >> "$TMP_SERVICE"
+            printf '%s\n' 'After=network.target'                     >> "$TMP_SERVICE"
+            printf '%s\n' ''                                         >> "$TMP_SERVICE"
+            printf '%s\n' '[Service]'                                >> "$TMP_SERVICE"
+            printf '%s\n' "User=$(whoami)"                           >> "$TMP_SERVICE"
+            printf '%s\n' "WorkingDirectory=$HOME/Discord_Bot"       >> "$TMP_SERVICE"
+            printf '%s\n' "EnvironmentFile=$HOME/.config/discordbot/bot.env" >> "$TMP_SERVICE"
+            printf '%s\n' "ExecStart=$HOME/Discord_Bot/.venv/bin/python $HOME/Discord_Bot/test2.py" >> "$TMP_SERVICE"
+            printf '%s\n' 'Restart=always'                           >> "$TMP_SERVICE"
+            printf '%s\n' 'RestartSec=3'                             >> "$TMP_SERVICE"
+            printf '%s\n' 'NoNewPrivileges=true'                     >> "$TMP_SERVICE"
+            printf '%s\n' 'PrivateTmp=true'                          >> "$TMP_SERVICE"
+            printf '%s\n' ''                                         >> "$TMP_SERVICE"
+            printf '%s\n' '[Install]'                                >> "$TMP_SERVICE"
+            printf '%s\n' 'WantedBy=multi-user.target'               >> "$TMP_SERVICE"
 
-[Service]
-User=__USER__
-WorkingDirectory=__HOME__/Discord_Bot
-EnvironmentFile=__HOME__/.config/discordbot/bot.env
-ExecStart=__HOME__/Discord_Bot/.venv/bin/python __HOME__/Discord_Bot/test2.py
-Restart=always
-RestartSec=3
-NoNewPrivileges=true
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
-SERVICE
-
-            # substitute HOME and USER safely
-            sed -i "s|__HOME__|$HOME|g" "$TMP_SERVICE"
-            sed -i "s|__USER__|$(whoami)|g" "$TMP_SERVICE"
-
-            # install/refresh service
             if [ ! -f /etc/systemd/system/discordbot.service ] || ! cmp -s "$TMP_SERVICE" /etc/systemd/system/discordbot.service; then
               sudo mv "$TMP_SERVICE" /etc/systemd/system/discordbot.service
               sudo chown root:root /etc/systemd/system/discordbot.service
@@ -71,3 +65,4 @@ SERVICE
             sudo systemctl restart discordbot
             sudo systemctl --no-pager --full status discordbot || true
             journalctl -u discordbot -n 100 --no-pager || true
+
