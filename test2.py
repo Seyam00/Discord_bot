@@ -103,7 +103,7 @@ def get_time_left_sa(server):
     else:
         next_month = now.month + 1 if now.month < 12 else 1
         next_year = now.year if now.month < 12 else now.year + 1
-        reset_date = datetime(next_year, next_month, 1, 4, 0, 0, tzinfo=now.tzinfo)
+        reset_date = datetime(next_year, next_month, 16, 4, 0, 0, tzinfo=now.tzinfo)
 
     return reset_date - now
 
