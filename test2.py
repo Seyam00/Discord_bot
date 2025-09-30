@@ -96,9 +96,9 @@ def get_time_left_sa(server):
     
     now = datetime.now(timezone.utc) + timedelta(hours=offset)
 
-    if now.day < 1 or (now.day == 1 and now.hour < 4):
-        reset_date = now.replace(day=1, hour=4, minute=0, second=0)
-    elif now.day < 16 or (now.day == 16 and now.hour < 4):
+    #if now.day < 1 or (now.day == 1 and now.hour < 4):
+    #    reset_date = now.replace(day=1, hour=4, minute=0, second=0)
+    if now.day < 16 or (now.day == 16 and now.hour < 4):
         reset_date = now.replace(day=16, hour=4, minute=0, second=0)
     else:
         next_month = now.month + 1 if now.month < 12 else 1
@@ -138,7 +138,7 @@ def get_time_left_so(server):
     now = datetime.now(tz)
 
     genshin_patch_day = datetime(year=2025, month=8, day=6, hour=4, minute=0, tzinfo=tz)
-    next_patch_day    = datetime(year=2025, month=9, day=9, hour=4, minute=0, tzinfo=tz)
+    next_patch_day    = datetime(year=2025, month=10, day=22, hour=4, minute=0, tzinfo=tz)
 
     remaining = next_patch_day - now
     return remaining if remaining.total_seconds() > 0 else timedelta(0)
